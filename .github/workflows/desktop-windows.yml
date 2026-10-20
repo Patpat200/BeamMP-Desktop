@@ -1,0 +1,25 @@
+name: Build desktop preview (Windows)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt Widgets and tools
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: 'win64_msvc2022_64'
+          cache: true
+      - name: Build core, desktop and tests
+        shell: pwsh
+        run: |
+          ./tools/build-windows.ps1 -QtRoot $env:QT_ROOT_DIR -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BeamMP-Desktop-Windows
+          path: dist-desktop/
+          if-no-files-found: error

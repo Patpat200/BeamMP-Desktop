@@ -13,3 +13,21 @@ bin/
 compile_commands.json
 key
 out/
+
+# Local build and verification dependencies
+.build-tools/
+.qt-download/
+.qt-sdk/
+.httplib/
+.build-deps/
+build-gui/
+build-local/
+dist-desktop/
+qa/
+aqtinstall.log
+
+.qt-cache/
+pip-*/
+tmp*/
+build-windows-desktop/
+build-windows-msvc/

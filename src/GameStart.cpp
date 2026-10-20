@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include "Utils.h"
+#include "WindowsCommandLine.h"
 #if defined(_WIN32)
 #include <shlobj.h>
 #elif defined(__linux__)
@@ -157,12 +158,13 @@ void StartGame(std::wstring Dir) {
 
     for (int i = 0; i < options.game_arguments_length; i++) {
         gameArgs += L" ";
-        gameArgs += Utils::ToWString(options.game_arguments[i]);
+        gameArgs += QuoteWindowsArgument(Utils::ToWString(options.game_arguments[i]));
     }
 
     debug(L"BeamNG executable path: " + Dir);
 
-    bSuccess = CreateProcessW(nullptr, (wchar_t*)(Dir + gameArgs).c_str(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
+    auto commandLine = QuoteWindowsArgument(Dir) + gameArgs;
+    bSuccess = CreateProcessW(Dir.c_str(), commandLine.data(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");
         GamePID = pi.dwProcessId;

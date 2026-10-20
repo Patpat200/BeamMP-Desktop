@@ -41,7 +41,9 @@ void InitOptions(int argc, const char *argv[], Options &options) {
 
     while (i < argc) {
         std::string argument(argv[i]);
-        if (argument == "-p" || argument == "--port") {
+        if (argument == "--gui-backend") {
+            // Consumed by main; retained in argv for standard option parsing.
+        } else if (argument == "-p" || argument == "--port") {
             if (i + 1 >= argc) {
                 std::string error_message =
                     "No port specified, resorting to default (";
@@ -89,6 +91,8 @@ void InitOptions(int argc, const char *argv[], Options &options) {
         } else if (argument == "--user-path") {
             if (i + 1 >= argc) {
                 error("You must specify a path after the `--user-path` argument");
+                ++i;
+                continue;
             }
             options.user_path = argv[i + 1];
             i++;

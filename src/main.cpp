@@ -14,6 +14,7 @@
 #include <iostream>
 #include <thread>
 #include "Options.h"
+#include "GuiBackend.h"
 
 Options options;
 
@@ -25,6 +26,9 @@ Options options;
 }
 
 int main(int argc, const char** argv) try {
+    if (argc > 1 && std::string(argv[1]) == "--gui-backend") {
+        return RunGuiBackend(argc, argv);
+    }
 #if defined(_WIN32)
     system("cls");
 #elif defined(__linux__)

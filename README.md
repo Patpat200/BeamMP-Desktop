@@ -21,3 +21,13 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+## Optional desktop frontend (community preview)
+
+This branch includes a Qt 6 Widgets frontend with account sign-in, a Play button,
+streamed console logs, and settings. The original console launcher remains the
+backend and can still be built and used independently.
+
+See [the desktop setup and build guide](docs/DESKTOP-FR.md). Build both programs
+with `-DBEAMMP_BUILD_GUI=ON` and a Qt CMake prefix, or use the manual Windows
+workflow. `-DBEAMMP_GUI_ONLY=ON` builds the frontend independently for UI work.
