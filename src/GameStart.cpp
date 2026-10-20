@@ -164,6 +164,7 @@ void StartGame(std::wstring Dir) {
     debug(L"BeamNG executable path: " + Dir);
 
     auto commandLine = QuoteWindowsArgument(Dir) + gameArgs;
+    info(L"BeamNG command line: " + commandLine);
     bSuccess = CreateProcessW(Dir.c_str(), commandLine.data(), nullptr, nullptr, TRUE, 0, nullptr, BaseDir.c_str(), &si, &pi);
     if (bSuccess) {
         info("Game Launched!");

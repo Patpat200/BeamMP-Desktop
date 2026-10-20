@@ -1,25 +1,96 @@
-name: Build desktop preview (Windows)
+name: Build and release desktop (Windows)
+
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build and publish (example: v0.1.0)'
+        required: true
+        type: string
+
 permissions:
   contents: read
+
+concurrency:
+  group: desktop-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  desktop:
+  build:
     runs-on: windows-2022
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the version tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
       - name: Install Qt Widgets and tools
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.3'
           arch: 'win64_msvc2022_64'
           cache: true
+
       - name: Build core, desktop and tests
         shell: pwsh
         run: |
           ./tools/build-windows.ps1 -QtRoot $env:QT_ROOT_DIR -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT
-      - uses: actions/upload-artifact@v4
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          Copy-Item dist-desktop/BeamMP-Launcher.exe release-assets/
+          Copy-Item dist-desktop/BeamMP-Desktop.exe release-assets/
+          # Desktop also needs Qt DLLs and plugins; the ZIP is the complete app.
+          Compress-Archive -Path dist-desktop/* -DestinationPath release-assets/BeamMP-Desktop-Windows.zip -Force
+
+      - name: Keep release files
+        uses: actions/upload-artifact@v4
         with:
-          name: BeamMP-Desktop-Windows
-          path: dist-desktop/
+          name: BeamMP-Desktop-release-assets
+          path: release-assets/
           if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - name: Download tested build
+        uses: actions/download-artifact@v4
+        with:
+          name: BeamMP-Desktop-release-assets
+          path: release-assets
+
+      - name: Publish GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          assets=(
+            release-assets/BeamMP-Launcher.exe
+            release-assets/BeamMP-Desktop.exe
+            release-assets/BeamMP-Desktop-Windows.zip
+          )
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            # Rerunning a tag replaces its files without changing release notes.
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            # Prepare all files in a draft, then make the release public.
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --verify-tag --draft --title "BeamMP Desktop $RELEASE_TAG" --generate-notes
+            gh release edit "$RELEASE_TAG" --draft=false
+          fi
